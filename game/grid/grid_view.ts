@@ -13,10 +13,10 @@ const MARKER_COLOR = 0xf5e6a8;
 const BUMP_COLOR = 0xe0533d;
 
 const TERRAIN_COLORS: Record<Terrain, number> = {
-  grass: 0x5d9e4a,
-  forest: 0x2f6b3a,
-  water: 0x2d5f9e,
-  rock: 0x6e6a66,
+  saltgrass: 0xa3b86c, // sandy green
+  bramblewood: 0x4b5e3a, // dark scrub
+  tideflat: 0x3d7ea6, // sea blue
+  cairnstone: 0x8c8c86, // grey stone
 };
 
 // Enough cells to cover the view, plus a margin so that the camera can lag behind
