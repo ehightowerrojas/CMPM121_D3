@@ -9,6 +9,11 @@ const ARROWS: Record<string, Direction> = {
   ArrowRight: "east",
 };
 
+function onControl(target: EventTarget | null): boolean {
+  return target instanceof Element &&
+    target.closest("button, a, input, select, textarea") !== null;
+}
+
 // Input in, core in the middle, presenter out. None of those three knows the others,
 // which makes this a Mediator: https://refactoring.guru/design-patterns/mediator
 // There is no frame loop here: a command runs on a key press or when playback ends.
@@ -37,13 +42,21 @@ export class Controller {
   }
 
   private keyDown(event: KeyboardEvent) {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
     const direction = ARROWS[event.key];
-    if (!direction || event.ctrlKey || event.metaKey || event.altKey) return;
-    // Otherwise arrow keys would also scroll the page.
+    // Space on a focused control, such as the sound button, belongs to that control.
+    const gather = event.key === " " && !onControl(event.target);
+    if (!direction && !gather) return;
+    // Otherwise arrow keys and Space would also scroll the page.
     event.preventDefault();
     if (event.repeat) return;
-    this.held.push(direction);
-    this.pressed = { type: "move", direction };
+    if (direction) {
+      this.held.push(direction);
+      this.pressed = { type: "move", direction };
+    } else {
+      // A tap only, never held: holding Space would gather again after every step.
+      this.pressed = { type: "gather" };
+    }
     this.next();
   }
 
