@@ -17,6 +17,32 @@ export function isPassable(terrain: Terrain): boolean {
   return terrain !== "tideflat" && terrain !== "cairnstone";
 }
 
+export type Material = "reeds" | "driftwood" | "stone";
+
+// About one Saltgrass cell in ten holds a loose stone instead of reeds.
+const looseStoneChance = 0.1;
+
+// What a cell yields when gathered. Like terrain, this is computed, not stored:
+// the rules record only which cells are used up. Cairnstone always answers
+// stone here, and the rules decide whether the player can get at it.
+export function materialAt(
+  seed: number,
+  x: number,
+  y: number,
+): Material | null {
+  switch (terrainAt(seed, x, y)) {
+    case "saltgrass":
+      // A per-cell hash rather than noise, so stones scatter instead of clumping.
+      return gridValue(seed + 3, x, y) < looseStoneChance ? "stone" : "reeds";
+    case "bramblewood":
+      return "driftwood";
+    case "cairnstone":
+      return "stone";
+    case "tideflat":
+      return null;
+  }
+}
+
 // Value noise: random numbers at coarse grid points, blended between them, so
 // that terrain forms regions instead of static.
 function noise(seed: number, x: number, y: number, scale: number): number {

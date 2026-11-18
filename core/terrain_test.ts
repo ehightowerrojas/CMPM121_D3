@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertNotEquals } from "@std/assert";
-import { isPassable, terrainAt } from "./mod.ts";
+import { isPassable, materialAt, terrainAt } from "./mod.ts";
 
 function sample(seed: number, originX = 0, originY = 0): string[] {
   const cells: string[] = [];
@@ -39,4 +39,33 @@ Deno.test("no seed starts walled in", () => {
     }
     assert(seen.size >= 2000, `seed ${seed} stops at ${seen.size} cells`);
   }
+});
+
+function cellsAround(radius: number): { x: number; y: number }[] {
+  const cells = [];
+  for (let y = -radius; y <= radius; y++) {
+    for (let x = -radius; x <= radius; x++) cells.push({ x, y });
+  }
+  return cells;
+}
+
+Deno.test("the same seed and cell always give the same material", () => {
+  for (const { x, y } of cellsAround(20)) {
+    assertEquals(materialAt(121, x, y), materialAt(121, x, y));
+  }
+});
+
+Deno.test("Tideflat gives nothing", () => {
+  const tideflats = cellsAround(40).filter(({ x, y }) =>
+    terrainAt(121, x, y) === "tideflat"
+  );
+  assert(tideflats.length > 0, "expected some Tideflat to check");
+  for (const { x, y } of tideflats) assertEquals(materialAt(121, x, y), null);
+});
+
+Deno.test("loose stones lie on some Saltgrass", () => {
+  const found = cellsAround(20).some(({ x, y }) =>
+    terrainAt(121, x, y) === "saltgrass" && materialAt(121, x, y) === "stone"
+  );
+  assert(found, "expected a stone on Saltgrass within 20 cells of the start");
 });
