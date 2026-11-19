@@ -1,26 +1,24 @@
-// The only folder allowed to import Phaser, and for one job: drawing the grid.
-// Input, the HUD, sound, and the order of events all live outside it.
 import Phaser from "phaser";
 import type { Cell, GameEvent, GameState, Terrain } from "../../core/mod.ts";
-import { terrainAt } from "../../core/mod.ts";
+import { resourceAt, terrainAt } from "../../core/mod.ts";
 
 export const CELL_SIZE = 32;
 const VIEW_WIDTH = 800;
 const VIEW_HEIGHT = 600;
 const WALK_MS = 120;
 const BUMP_MS = 60;
+const POP_MS = 90;
 const MARKER_COLOR = 0xf5e6a8;
 const BUMP_COLOR = 0xe0533d;
+const PEBBLE_COLOR = 0xb8b2a8;
 
 const TERRAIN_COLORS: Record<Terrain, number> = {
-  grass: 0x5d9e4a,
-  forest: 0x2f6b3a,
-  water: 0x2d5f9e,
-  rock: 0x6e6a66,
+  saltgrass: 0x5d9e4a,
+  bramblewood: 0x2f6b3a,
+  tideflat: 0x2d5f9e,
+  cairnstone: 0x6e6a66,
 };
 
-// Enough cells to cover the view, plus a margin so that the camera can lag behind
-// the player without showing an unpainted edge.
 const CELLS_ACROSS = 16;
 const CELLS_DOWN = 13;
 
@@ -31,18 +29,24 @@ function cellCenter({ x, y }: Cell): Cell {
   };
 }
 
-// One output of the presenter. It shows events; it decides nothing.
-// Humble Object: http://xunitpatterns.com/Humble%20Object.html
+function cellKey({ x, y }: Cell): string {
+  return `${x},${y}`;
+}
+
 export class GridView extends Phaser.Scene {
   private readonly seed: number;
   private readonly start: Cell;
+  private readonly gathered = new Set<string>();
   private ground!: Phaser.GameObjects.Graphics;
   private marker!: Phaser.GameObjects.Arc;
+  private lastCenter: Cell;
 
   constructor(state: GameState) {
     super("grid");
     this.seed = state.seed;
     this.start = { ...state.player };
+    this.lastCenter = { ...state.player };
+    for (const key of state.gatheredCells) this.gathered.add(key);
   }
 
   create() {
@@ -54,11 +58,6 @@ export class GridView extends Phaser.Scene {
     this.fitToDisplay();
   }
 
-  // Phaser has no device-pixel setting of its own. So the canvas backing store is
-  // CSS size times devicePixelRatio, the CSS size stays put, and a camera zoom lets
-  // all drawing stay in logical pixels. The media query fires when the ratio changes:
-  // a move to another monitor, or browser zoom. The view's CSS size is fixed, so plain
-  // window resizes need nothing here.
   private fitToDisplay() {
     const ratio = globalThis.devicePixelRatio || 1;
     this.scale.resize(
@@ -78,12 +77,18 @@ export class GridView extends Phaser.Scene {
   show(event: GameEvent): Promise<void> {
     switch (event.type) {
       case "moved":
+        this.lastCenter = { ...event.to };
         this.drawCellsAround(event.to);
         return this.walk(event.to);
       case "blocked":
         return this.bump(event.at, event.toward);
+      case "gathered":
+        this.gathered.add(cellKey(event.cell));
+        this.drawCellsAround(this.lastCenter);
+        return this.pop();
+      case "nothingToGather":
+        return Promise.resolve();
       default:
-        // A new event type fails to type-check here until it has a presentation.
         event satisfies never;
         return Promise.resolve();
     }
@@ -100,7 +105,6 @@ export class GridView extends Phaser.Scene {
     });
   }
 
-  // Lurch part of the way toward the blocked cell, flash, and come back.
   private bump(at: Cell, toward: Cell): Promise<void> {
     const start = cellCenter(at);
     const target = cellCenter(toward);
@@ -120,26 +124,51 @@ export class GridView extends Phaser.Scene {
     });
   }
 
-  // Paint only what is near the camera. Asking the core again costs little, and
-  // the world itself is never stored.
+  private pop(): Promise<void> {
+    return new Promise((done) => {
+      this.tweens.add({
+        targets: this.marker,
+        scale: 1.25,
+        duration: POP_MS,
+        yoyo: true,
+        onComplete: () => {
+          this.marker.setScale(1);
+          done();
+        },
+      });
+    });
+  }
+
   private drawCellsAround({ x: centerX, y: centerY }: Cell) {
     this.ground.clear();
     for (let y = centerY - CELLS_DOWN; y <= centerY + CELLS_DOWN; y++) {
       for (let x = centerX - CELLS_ACROSS; x <= centerX + CELLS_ACROSS; x++) {
-        this.ground.fillStyle(TERRAIN_COLORS[terrainAt(this.seed, x, y)]);
+        const isUsed = this.gathered.has(`${x},${y}`);
+        const alpha = isUsed ? 0.55 : 1;
+        this.ground.fillStyle(
+          TERRAIN_COLORS[terrainAt(this.seed, x, y)],
+          alpha,
+        );
         this.ground.fillRect(
           x * CELL_SIZE,
           y * CELL_SIZE,
           CELL_SIZE - 1,
           CELL_SIZE - 1,
         );
+
+        if (!isUsed && resourceAt(this.seed, x, y) === "stone") {
+          const cx = x * CELL_SIZE + CELL_SIZE / 2;
+          const cy = y * CELL_SIZE + CELL_SIZE / 2;
+          this.ground.fillStyle(PEBBLE_COLOR, 0.95);
+          this.ground.fillCircle(cx - 4, cy + 2, 3);
+          this.ground.fillCircle(cx + 4, cy - 2, 2.5);
+          this.ground.fillCircle(cx + 2, cy + 4, 2);
+        }
       }
     }
   }
 }
 
-// Resolves once Phaser has booted and the scene exists. Phaser's input and audio
-// are off: this project only asks it to draw.
 export function startGridView(
   parent: HTMLElement,
   state: GameState,
