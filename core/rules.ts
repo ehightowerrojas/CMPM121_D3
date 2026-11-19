@@ -1,15 +1,21 @@
+// The rules of the game. There is no clock here: a command updates the state at
+// once, and the events it returns are a record of what happened. Whoever called
+// apply() decides how, or whether, to show them over time.
+
 import { isPassable, type Terrain, terrainAt } from "./terrain.ts";
 
 export type Cell = { x: number; y: number };
 
 export type Direction = "north" | "south" | "east" | "west";
 
-export type Resource = "reeds" | "driftwood" | "stone";
+export type Material = "reeds" | "driftwood" | "stone";
+
+export type Resource = Material;
 
 export type GameState = {
   seed: number;
   player: Cell;
-  resources: Record<Resource, number>;
+  resources: Record<Material, number>;
   gatheredCells: string[];
 };
 
@@ -20,7 +26,7 @@ export type Command =
 export type GameEvent =
   | { type: "moved"; from: Cell; to: Cell }
   | { type: "blocked"; at: Cell; toward: Cell; terrain: Terrain }
-  | { type: "gathered"; cell: Cell; resource: Resource; amount: number }
+  | { type: "gathered"; cell: Cell; resource: Material; amount: number }
   | { type: "nothingToGather"; cell: Cell };
 
 const STEPS: Record<Direction, Cell> = {
@@ -34,17 +40,16 @@ function cellKey({ x, y }: Cell): string {
   return `${x},${y}`;
 }
 
-// Adjust this mapping if your terrain / coordinate rules assign resources differently.
-export function resourceAt(
+export function materialAt(
   seed: number,
   x: number,
   y: number,
-): Resource | null {
+): Material | null {
   const terrain = terrainAt(seed, x, y);
-  if (terrain === "cairnstone") return "stone";
+  if (terrain === "tideflat") return null;
   if (terrain === "bramblewood") return "driftwood";
-  if (terrain === "saltgrass" && Math.abs((x * 31 + y * 17 + seed) % 5) === 0) {
-    return "reeds";
+  if (terrain === "saltgrass") {
+    return Math.abs((x * 31 + y * 17 + seed) % 5) === 0 ? "stone" : "reeds";
   }
   return null;
 }
@@ -86,7 +91,7 @@ function gather(state: GameState): GameEvent[] {
   if (state.gatheredCells.includes(key)) {
     return [{ type: "nothingToGather", cell }];
   }
-  const resource = resourceAt(state.seed, cell.x, cell.y);
+  const resource = materialAt(state.seed, cell.x, cell.y);
   if (!resource) {
     return [{ type: "nothingToGather", cell }];
   }

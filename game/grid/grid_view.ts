@@ -1,6 +1,8 @@
+// The only folder allowed to import Phaser, and for one job: drawing the grid.
+// Input, the HUD, sound, and the order of events all live outside it.
 import Phaser from "phaser";
 import type { Cell, GameEvent, GameState, Terrain } from "../../core/mod.ts";
-import { resourceAt, terrainAt } from "../../core/mod.ts";
+import { materialAt, terrainAt } from "../../core/mod.ts";
 
 export const CELL_SIZE = 32;
 const VIEW_WIDTH = 800;
@@ -156,7 +158,7 @@ export class GridView extends Phaser.Scene {
           CELL_SIZE - 1,
         );
 
-        if (!isUsed && resourceAt(this.seed, x, y) === "stone") {
+        if (!isUsed && materialAt(this.seed, x, y) === "stone") {
           const cx = x * CELL_SIZE + CELL_SIZE / 2;
           const cy = y * CELL_SIZE + CELL_SIZE / 2;
           this.ground.fillStyle(PEBBLE_COLOR, 0.95);
