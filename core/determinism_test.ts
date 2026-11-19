@@ -9,11 +9,15 @@ import {
 
 function commands(): Command[] {
   const walk: Direction[] = ["east", "east", "south", "south", "west", "north"];
-  // A long enough walk to bump into terrain as well as cross it.
-  return Array.from({ length: 300 }, (_, i) => ({
-    type: "move",
-    direction: walk[(i * i + i) % walk.length],
-  }));
+  // A long enough walk to bump into terrain as well as cross it. Every fifth
+  // command gathers, and the walk doubles back, so some cells get gathered twice.
+  return Array.from(
+    { length: 300 },
+    (_, i): Command =>
+      i % 5 === 4
+        ? { type: "gather" }
+        : { type: "move", direction: walk[(i * i + i) % walk.length] },
+  );
 }
 
 function play(seed: number) {
