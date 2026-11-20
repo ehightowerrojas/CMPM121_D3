@@ -1,12 +1,35 @@
 import {
   type GameEvent,
   type GameState,
+  type Item,
+  type Material,
   type Resource,
   terrainAt,
 } from "../core/mod.ts";
 
+const ITEM_LABELS: Record<Item, string> = {
+  reedSkiff: "Reed Skiff",
+  cairnPick: "Cairn Pick",
+};
+
+const MATERIAL_LABELS: Record<Material, string> = {
+  reeds: "reeds",
+  driftwood: "driftwood",
+  stone: "stone",
+};
+
 function element(id: string): HTMLElement {
   return document.getElementById(id)!;
+}
+
+function formatMissing(missing: Partial<Record<Material, number>>): string {
+  const parts: string[] = [];
+  for (const [mat, amount] of Object.entries(missing) as [Material, number][]) {
+    if (amount && amount > 0) {
+      parts.push(`${amount} ${MATERIAL_LABELS[mat]}`);
+    }
+  }
+  return parts.join(", ");
 }
 
 function describe(event: GameEvent): string {
@@ -19,6 +42,15 @@ function describe(event: GameEvent): string {
       return `gathered ${event.amount} ${event.resource} at ${event.cell.x}, ${event.cell.y}`;
     case "nothingToGather":
       return `nothing to gather at ${event.cell.x}, ${event.cell.y}`;
+    case "crafted":
+      return `crafted ${ITEM_LABELS[event.item]}`;
+    case "cannotCraft":
+      if (event.reason.kind === "alreadyOwned") {
+        return `cannot craft ${ITEM_LABELS[event.item]}: already owned`;
+      }
+      return `cannot craft ${ITEM_LABELS[event.item]}: missing ${
+        formatMissing(event.reason.missing)
+      }`;
   }
 }
 
@@ -39,6 +71,18 @@ export class Hud {
       this.showPosition(event.to.x, event.to.y);
     } else if (event.type === "gathered") {
       this.counts[event.resource] += event.amount;
+      this.showResources();
+    } else if (event.type === "crafted") {
+      for (
+        const [mat, amount] of Object.entries(event.spent) as [
+          Material,
+          number,
+        ][]
+      ) {
+        if (amount && amount > 0) {
+          this.counts[mat] -= amount;
+        }
+      }
       this.showResources();
     }
   }

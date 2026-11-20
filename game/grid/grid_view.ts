@@ -89,6 +89,8 @@ export class GridView extends Phaser.Scene {
         this.drawCellsAround(this.lastCenter);
         return this.pop();
       case "nothingToGather":
+      case "crafted":
+      case "cannotCraft":
         return Promise.resolve();
       default:
         event satisfies never;

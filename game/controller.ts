@@ -61,6 +61,24 @@ export class Controller {
       if (event.repeat) return;
       this.pressed = { type: "gather" };
       this.next();
+      return;
+    }
+
+    if (event.key === "1") {
+      if (onControl(event.target) || onControl(document.activeElement)) return;
+      event.preventDefault();
+      if (event.repeat) return;
+      this.pressed = { type: "craft", item: "reedSkiff" };
+      this.next();
+      return;
+    }
+
+    if (event.key === "2") {
+      if (onControl(event.target) || onControl(document.activeElement)) return;
+      event.preventDefault();
+      if (event.repeat) return;
+      this.pressed = { type: "craft", item: "cairnPick" };
+      this.next();
     }
   }
 

@@ -4,9 +4,11 @@ import {
   type Direction,
   type GameState,
   isPassable,
+  type Item,
   type Material,
   materialAt,
   newGame,
+  RECIPES,
   terrainAt,
 } from "./mod.ts";
 
@@ -140,4 +142,97 @@ Deno.test("gathering an already-gathered cell returns nothingToGather", () => {
   }]);
   assertEquals(state, before);
   assertEquals(state.resources[expectedResource], 1);
+});
+
+Deno.test("crafting with enough resources deducts costs and adds item", () => {
+  const state = newGame(1);
+  state.resources = { reeds: 5, driftwood: 3, stone: 1 };
+
+  const events = apply(state, { type: "craft", item: "reedSkiff" });
+
+  assertEquals(events, [{
+    type: "crafted",
+    item: "reedSkiff",
+    spent: { reeds: 3, driftwood: 2 },
+  }]);
+  assertEquals(state.resources, { reeds: 2, driftwood: 1, stone: 1 });
+  assertEquals(state.items.reedSkiff, 1);
+  assertEquals(state.items.cairnPick, 0);
+});
+
+Deno.test("crafting while short changes nothing and reports missing materials", () => {
+  const state = newGame(1);
+  state.resources = { reeds: 1, driftwood: 2, stone: 0 };
+  const before = cloneState(state);
+
+  const events = apply(state, { type: "craft", item: "reedSkiff" });
+
+  assertEquals(state, before);
+  assertEquals(events, [{
+    type: "cannotCraft",
+    item: "reedSkiff",
+    reason: { kind: "missing", missing: { reeds: 2 } },
+  }]);
+});
+
+Deno.test("crafting a second pick returns alreadyOwned and changes nothing", () => {
+  const state = newGame(1);
+  state.resources = { reeds: 0, driftwood: 4, stone: 2 };
+
+  const firstEvents = apply(state, { type: "craft", item: "cairnPick" });
+  assertEquals(firstEvents, [{
+    type: "crafted",
+    item: "cairnPick",
+    spent: { driftwood: 2, stone: 1 },
+  }]);
+  assertEquals(state.items.cairnPick, 1);
+
+  const beforeSecond = cloneState(state);
+  const secondEvents = apply(state, { type: "craft", item: "cairnPick" });
+
+  assertEquals(state, beforeSecond);
+  assertEquals(secondEvents, [{
+    type: "cannotCraft",
+    item: "cairnPick",
+    reason: { kind: "alreadyOwned" },
+  }]);
+});
+
+Deno.test("every recipe material appears near the start of the world", () => {
+  const neededMaterials = new Set<Material>();
+  for (
+    const recipe of Object.values(RECIPES) as Partial<
+      Record<Material, number>
+    >[]
+  ) {
+    for (
+      const [mat, amount] of Object.entries(recipe) as [Material, number][]
+    ) {
+      if (amount && amount > 0) neededMaterials.add(mat);
+    }
+  }
+
+  for (const mat of neededMaterials) {
+    let found = false;
+    for (let seed = 1; seed <= 20 && !found; seed++) {
+      for (let y = -15; y <= 15 && !found; y++) {
+        for (let x = -15; x <= 15; x++) {
+          if (materialAt(seed, x, y) === mat) {
+            found = true;
+            break;
+          }
+        }
+      }
+    }
+    assertEquals(
+      found,
+      true,
+      `Expected material '${mat}' to appear near origin in at least one seed`,
+    );
+  }
+});
+
+Deno.test("crafting types support both recipe items", () => {
+  const items: Item[] = ["reedSkiff", "cairnPick"];
+  assertEquals(items.length, 2);
 });

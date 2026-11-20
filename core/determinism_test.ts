@@ -11,13 +11,19 @@ function commands(): Command[] {
   const walk: Direction[] = ["east", "east", "south", "south", "west", "north"];
   // A long enough walk to bump into terrain as well as cross it. Every fifth
   // command gathers, and the walk doubles back, so some cells get gathered twice.
-  return Array.from(
+  const base = Array.from(
     { length: 300 },
     (_, i): Command =>
       i % 5 === 4
         ? { type: "gather" }
         : { type: "move", direction: walk[(i * i + i) % walk.length] },
   );
+  return [
+    ...base,
+    { type: "craft", item: "reedSkiff" },
+    { type: "craft", item: "cairnPick" },
+    { type: "craft", item: "cairnPick" },
+  ];
 }
 
 function play(seed: number) {
