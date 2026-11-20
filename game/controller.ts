@@ -1,4 +1,4 @@
-import { apply, type Command, type Direction } from "../core/mod.ts";
+import { apply, type Command, type Direction, type Item } from "../core/mod.ts";
 import type { GameState } from "../core/mod.ts";
 import type { Presenter } from "./presenter.ts";
 
@@ -7,6 +7,11 @@ const ARROWS: Record<string, Direction> = {
   ArrowDown: "south",
   ArrowLeft: "west",
   ArrowRight: "east",
+};
+
+const CRAFT_KEYS: Record<string, Item> = {
+  "1": "reedSkiff",
+  "2": "cairnPick",
 };
 
 function onControl(target: EventTarget | null): boolean {
@@ -64,20 +69,12 @@ export class Controller {
       return;
     }
 
-    if (event.key === "1") {
+    const craftItem = CRAFT_KEYS[event.key];
+    if (craftItem) {
       if (onControl(event.target) || onControl(document.activeElement)) return;
       event.preventDefault();
       if (event.repeat) return;
-      this.pressed = { type: "craft", item: "reedSkiff" };
-      this.next();
-      return;
-    }
-
-    if (event.key === "2") {
-      if (onControl(event.target) || onControl(document.activeElement)) return;
-      event.preventDefault();
-      if (event.repeat) return;
-      this.pressed = { type: "craft", item: "cairnPick" };
+      this.pressed = { type: "craft", item: craftItem };
       this.next();
     }
   }

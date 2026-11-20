@@ -4,7 +4,6 @@ import {
   type Direction,
   type GameState,
   isPassable,
-  type Item,
   type Material,
   materialAt,
   newGame,
@@ -198,7 +197,7 @@ Deno.test("crafting a second pick returns alreadyOwned and changes nothing", () 
   }]);
 });
 
-Deno.test("every recipe material appears near the start of the world", () => {
+Deno.test("every recipe material appears on passable ground near the start of every seed", () => {
   const neededMaterials = new Set<Material>();
   for (
     const recipe of Object.values(RECIPES) as Partial<
@@ -213,26 +212,22 @@ Deno.test("every recipe material appears near the start of the world", () => {
   }
 
   for (const mat of neededMaterials) {
-    let found = false;
-    for (let seed = 1; seed <= 20 && !found; seed++) {
+    for (let seed = 1; seed <= 20; seed++) {
+      let found = false;
       for (let y = -15; y <= 15 && !found; y++) {
         for (let x = -15; x <= 15; x++) {
+          if (!isPassable(terrainAt(seed, x, y))) continue;
           if (materialAt(seed, x, y) === mat) {
             found = true;
             break;
           }
         }
       }
+      assertEquals(
+        found,
+        true,
+        `Expected passable '${mat}' near origin for seed ${seed}`,
+      );
     }
-    assertEquals(
-      found,
-      true,
-      `Expected material '${mat}' to appear near origin in at least one seed`,
-    );
   }
-});
-
-Deno.test("crafting types support both recipe items", () => {
-  const items: Item[] = ["reedSkiff", "cairnPick"];
-  assertEquals(items.length, 2);
 });
