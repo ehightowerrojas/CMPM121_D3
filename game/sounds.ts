@@ -2,7 +2,7 @@ import type { GameEvent } from "../core/mod.ts";
 
 type SoundName = "step" | "bump" | "gather" | "chime";
 
-// Which sound each event plays. A new event fails to type-check until it has an entry.[cite: 6]
+// Which sound each event plays. A new event fails to type-check until it has an entry.
 const SOUND_FOR: Record<GameEvent["type"], SoundName | null> = {
   moved: "step",
   blocked: "bump",
@@ -34,7 +34,7 @@ const VOLUME = 0.12;
 
 // Phaser plays loaded audio but has no synthesis, so this is plain Web Audio, with
 // no library and no Phaser. Browsers refuse to start audio before a user gesture,
-// so the context waits for the first key or click.[cite: 6]
+// so the context waits for the first key or click.
 export class Sounds {
   context: AudioContext | null = null;
   private muted = false;
@@ -47,7 +47,7 @@ export class Sounds {
     addEventListener("pointerdown", start, { once: true });
     button.addEventListener("click", (event) => {
       this.setMuted(!this.muted);
-      // After a mouse click, give keys back to the game. Keyboard users keep focus.[cite: 6]
+      // After a mouse click, give keys back to the game. Keyboard users keep focus.
       if (event.detail > 0) button.blur();
     });
   }
@@ -62,7 +62,7 @@ export class Sounds {
     this.button.textContent = muted ? "Sound: off" : "Sound: on";
     this.button.setAttribute("aria-pressed", String(muted));
     this.startContext();
-    // Unmuting confirms itself.[cite: 6]
+    // Unmuting confirms itself.
     this.play("chime");
   }
 
@@ -71,7 +71,7 @@ export class Sounds {
       this.context ??= new AudioContext();
       this.context.resume();
     } catch {
-      // No audio on this browser or device. The game plays on, silently.[cite: 6]
+      // No audio on this browser or device. The game plays on, silently.
       this.context = null;
     }
   }

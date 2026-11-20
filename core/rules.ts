@@ -2,15 +2,21 @@
 // once, and the events it returns are a record of what happened. Whoever called
 // apply() decides how, or whether, to show them over time.
 
-import { isPassable, type Terrain, terrainAt } from "./terrain.ts";
+import {
+  isPassable,
+  type Material,
+  materialAt,
+  type Terrain,
+  terrainAt,
+} from "./terrain.ts";
+
+export type { Material };
+
+export type Resource = Material;
 
 export type Cell = { x: number; y: number };
 
 export type Direction = "north" | "south" | "east" | "west";
-
-export type Material = "reeds" | "driftwood" | "stone";
-
-export type Resource = Material;
 
 export type GameState = {
   seed: number;
@@ -38,20 +44,6 @@ const STEPS: Record<Direction, Cell> = {
 
 function cellKey({ x, y }: Cell): string {
   return `${x},${y}`;
-}
-
-export function materialAt(
-  seed: number,
-  x: number,
-  y: number,
-): Material | null {
-  const terrain = terrainAt(seed, x, y);
-  if (terrain === "tideflat") return null;
-  if (terrain === "bramblewood") return "driftwood";
-  if (terrain === "saltgrass") {
-    return Math.abs((x * 31 + y * 17 + seed) % 5) === 0 ? "stone" : "reeds";
-  }
-  return null;
 }
 
 export function newGame(seed: number): GameState {
