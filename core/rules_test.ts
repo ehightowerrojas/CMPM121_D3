@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, fail } from "@std/assert";
 import {
   apply,
   type Direction,
@@ -9,6 +9,10 @@ import {
   newGame,
   terrainAt,
 } from "./mod.ts";
+
+function cloneState(state: GameState): GameState {
+  return JSON.parse(JSON.stringify(state)) as GameState;
+}
 
 function standingOn(
   seed: number,
@@ -69,28 +73,30 @@ Deno.test("moving onto passable terrain moves the player", () => {
 
 Deno.test("a blocked move changes nothing and reports why", () => {
   for (let seed = 1; seed <= 50; seed++) {
-    for (const direction of ["north", "south", "east", "west"] as const) {
-      const step = {
-        north: { x: 0, y: -1 },
-        south: { x: 0, y: 1 },
-        east: { x: 1, y: 0 },
-        west: { x: -1, y: 0 },
-      }[direction];
-      const terrain = terrainAt(seed, step.x, step.y);
-      if (!isPassable(terrain)) {
-        const state = newGame(seed);
-        const events = apply(state, { type: "move", direction });
-        assertEquals(state.player, { x: 0, y: 0 });
-        assertEquals(events, [{
-          type: "blocked",
-          at: { x: 0, y: 0 },
-          toward: step,
-          terrain,
-        }]);
-        return;
-      }
+    const state = newGame(seed);
+    let x = 0;
+    while (x < 100 && isPassable(terrainAt(seed, x + 1, 0))) {
+      apply(state, { type: "move", direction: "east" });
+      x++;
+    }
+    const toward = { x: x + 1, y: 0 };
+    const terrain = terrainAt(seed, toward.x, toward.y);
+    if (!isPassable(terrain)) {
+      const before = cloneState(state);
+      const events = apply(state, { type: "move", direction: "east" });
+      assertEquals(state, before);
+      assertEquals(events, [{
+        type: "blocked",
+        at: { x, y: 0 },
+        toward,
+        terrain,
+      }]);
+      return;
     }
   }
+  fail(
+    "Expected to find a blocked cell within 100 steps for at least one seed",
+  );
 });
 
 Deno.test("an event keeps its cells while state moves on", () => {
@@ -125,12 +131,13 @@ Deno.test("gathering an already-gathered cell returns nothingToGather", () => {
   const expectedResource = materialAt(1, x, y)!;
 
   apply(state, { type: "gather" });
+  const before = cloneState(state);
   const secondEvents = apply(state, { type: "gather" });
 
   assertEquals(secondEvents, [{
     type: "nothingToGather",
     cell: { x, y },
   }]);
+  assertEquals(state, before);
   assertEquals(state.resources[expectedResource], 1);
-  assertEquals(state.gatheredCells.length, 1);
 });

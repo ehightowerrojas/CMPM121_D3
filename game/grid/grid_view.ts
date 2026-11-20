@@ -145,12 +145,10 @@ export class GridView extends Phaser.Scene {
     this.ground.clear();
     for (let y = centerY - CELLS_DOWN; y <= centerY + CELLS_DOWN; y++) {
       for (let x = centerX - CELLS_ACROSS; x <= centerX + CELLS_ACROSS; x++) {
+        const terrain = terrainAt(this.seed, x, y);
         const isUsed = this.gathered.has(`${x},${y}`);
         const alpha = isUsed ? 0.55 : 1;
-        this.ground.fillStyle(
-          TERRAIN_COLORS[terrainAt(this.seed, x, y)],
-          alpha,
-        );
+        this.ground.fillStyle(TERRAIN_COLORS[terrain], alpha);
         this.ground.fillRect(
           x * CELL_SIZE,
           y * CELL_SIZE,
@@ -158,7 +156,11 @@ export class GridView extends Phaser.Scene {
           CELL_SIZE - 1,
         );
 
-        if (!isUsed && materialAt(this.seed, x, y) === "stone") {
+        if (
+          !isUsed &&
+          terrain === "saltgrass" &&
+          materialAt(this.seed, x, y) === "stone"
+        ) {
           const cx = x * CELL_SIZE + CELL_SIZE / 2;
           const cy = y * CELL_SIZE + CELL_SIZE / 2;
           this.ground.fillStyle(PEBBLE_COLOR, 0.95);
