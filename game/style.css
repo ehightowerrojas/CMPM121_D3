@@ -41,6 +41,39 @@ body {
   margin: 0;
 }
 
+#hud h2 {
+  margin: 8px 0 4px;
+  font-size: 1rem;
+}
+
+#recipes {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#recipes button {
+  width: 100%;
+  padding: 7px 10px;
+  color: inherit;
+  text-align: left;
+  background: #262a31;
+  border: 1px solid #3a3f48;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#recipes button:hover {
+  background: #343a44;
+}
+
+#recipes button:focus-visible {
+  outline: 2px solid #f5e6a8;
+  outline-offset: 2px;
+}
+
 #live {
   min-height: 1.4em;
   margin: 0;

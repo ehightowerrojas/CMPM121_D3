@@ -1,6 +1,7 @@
 import { assertEquals, fail } from "@std/assert";
 import {
   apply,
+  cannotCraftReason,
   type Direction,
   type GameState,
   isPassable,
@@ -172,6 +173,28 @@ Deno.test("crafting while short changes nothing and reports missing materials", 
     item: "reedSkiff",
     reason: { kind: "missing", missing: { reeds: 2 } },
   }]);
+});
+
+Deno.test("crafting query reports readiness and ownership for both recipes", () => {
+  const state = newGame(1);
+
+  assertEquals(cannotCraftReason(state, "reedSkiff"), {
+    kind: "missing",
+    missing: { reeds: 3, driftwood: 2 },
+  });
+  assertEquals(cannotCraftReason(state, "cairnPick"), {
+    kind: "missing",
+    missing: { driftwood: 2, stone: 1 },
+  });
+
+  state.resources = { reeds: 3, driftwood: 2, stone: 1 };
+  assertEquals(cannotCraftReason(state, "reedSkiff"), null);
+  assertEquals(cannotCraftReason(state, "cairnPick"), null);
+
+  state.items.reedSkiff = 1;
+  assertEquals(cannotCraftReason(state, "reedSkiff"), {
+    kind: "alreadyOwned",
+  });
 });
 
 Deno.test("crafting a second pick returns alreadyOwned and changes nothing", () => {

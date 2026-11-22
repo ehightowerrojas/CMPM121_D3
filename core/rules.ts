@@ -86,6 +86,28 @@ export function apply(state: GameState, command: Command): GameEvent[] {
   }
 }
 
+export function cannotCraftReason(
+  state: GameState,
+  item: Item,
+): CannotCraftReason | null {
+  if (state.items[item] > 0) {
+    return { kind: "alreadyOwned" };
+  }
+
+  const missing: Partial<Record<Material, number>> = {};
+  for (
+    const [mat, needed] of Object.entries(RECIPES[item]) as [
+      Material,
+      number,
+    ][]
+  ) {
+    const have = state.resources[mat];
+    if (have < needed) missing[mat] = needed - have;
+  }
+
+  return Object.keys(missing).length > 0 ? { kind: "missing", missing } : null;
+}
+
 function move(state: GameState, direction: Direction): GameEvent[] {
   const step = STEPS[direction];
   const from = { ...state.player };
@@ -116,30 +138,9 @@ function gather(state: GameState): GameEvent[] {
 }
 
 function craft(state: GameState, item: Item): GameEvent[] {
-  if (state.items[item] > 0) {
-    return [{ type: "cannotCraft", item, reason: { kind: "alreadyOwned" } }];
-  }
-
+  const reason = cannotCraftReason(state, item);
+  if (reason) return [{ type: "cannotCraft", item, reason }];
   const recipe = RECIPES[item];
-  const missing: Partial<Record<Material, number>> = {};
-  let hasMissing = false;
-
-  for (const [mat, needed] of Object.entries(recipe) as [Material, number][]) {
-    const have = state.resources[mat];
-    if (have < needed) {
-      missing[mat] = needed - have;
-      hasMissing = true;
-    }
-  }
-
-  if (hasMissing) {
-    return [{
-      type: "cannotCraft",
-      item,
-      reason: { kind: "missing", missing },
-    }];
-  }
-
   const spent: Partial<Record<Material, number>> = {};
   for (const [mat, needed] of Object.entries(recipe) as [Material, number][]) {
     state.resources[mat] -= needed;
