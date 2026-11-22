@@ -24,7 +24,7 @@ function standingOn(
     for (let y = -radius; y <= radius; y++) {
       for (let x = -radius; x <= radius; x++) {
         if (x === 0 && y === 0) continue;
-        if (!isPassable(terrainAt(seed, x, y))) continue;
+        if (!isPassable(terrainAt(seed, x, y), {})) continue;
         if (!predicate(materialAt(seed, x, y), x, y)) continue;
 
         const state = newGame(seed);
@@ -37,11 +37,13 @@ function standingOn(
         let curX = 0;
         let curY = 0;
         while (curX !== x || curY !== y) {
-          if (curX !== x && isPassable(terrainAt(seed, curX + dx, curY))) {
+          if (
+            curX !== x && isPassable(terrainAt(seed, curX + dx, curY), {})
+          ) {
             curX += dx;
             steps.push(horiz);
           } else if (
-            curY !== y && isPassable(terrainAt(seed, curX, curY + dy))
+            curY !== y && isPassable(terrainAt(seed, curX, curY + dy), {})
           ) {
             curY += dy;
             steps.push(vert);
@@ -77,13 +79,13 @@ Deno.test("a blocked move changes nothing and reports why", () => {
   for (let seed = 1; seed <= 50; seed++) {
     const state = newGame(seed);
     let x = 0;
-    while (x < 100 && isPassable(terrainAt(seed, x + 1, 0))) {
+    while (x < 100 && isPassable(terrainAt(seed, x + 1, 0), {})) {
       apply(state, { type: "move", direction: "east" });
       x++;
     }
     const toward = { x: x + 1, y: 0 };
     const terrain = terrainAt(seed, toward.x, toward.y);
-    if (!isPassable(terrain)) {
+    if (!isPassable(terrain, {})) {
       const before = cloneState(state);
       const events = apply(state, { type: "move", direction: "east" });
       assertEquals(state, before);
@@ -109,6 +111,20 @@ Deno.test("an event keeps its cells while state moves on", () => {
     type: "moved",
     from: { x: 0, y: 0 },
     to: { x: 1, y: 0 },
+  });
+});
+
+Deno.test("a crafted event keeps its costs while later crafting continues", () => {
+  const state = newGame(1);
+  state.resources = { reeds: 3, driftwood: 4, stone: 1 };
+  const [crafted] = apply(state, { type: "craft", item: "reedSkiff" });
+
+  apply(state, { type: "craft", item: "cairnPick" });
+
+  assertEquals(crafted, {
+    type: "crafted",
+    item: "reedSkiff",
+    spent: { reeds: 3, driftwood: 2 },
   });
 });
 
@@ -220,37 +236,108 @@ Deno.test("crafting a second pick returns alreadyOwned and changes nothing", () 
   }]);
 });
 
-Deno.test("every recipe material appears on passable ground near the start of every seed", () => {
-  const neededMaterials = new Set<Material>();
-  for (
-    const recipe of Object.values(RECIPES) as Partial<
-      Record<Material, number>
-    >[]
-  ) {
-    for (
-      const [mat, amount] of Object.entries(recipe) as [Material, number][]
-    ) {
-      if (amount && amount > 0) neededMaterials.add(mat);
+Deno.test("a skiff crosses shallow water to the stone island for a pick", () => {
+  const state = newGame(121);
+  state.resources = { reeds: 3, driftwood: 4, stone: 0 };
+
+  assertEquals(cannotCraftReason(state, "reedSkiff"), null);
+  assertEquals(cannotCraftReason(state, "cairnPick"), {
+    kind: "missing",
+    missing: { stone: 1 },
+  });
+
+  let blocked = false;
+  for (let steps = 0; steps < 40; steps++) {
+    const [event] = apply(state, { type: "move", direction: "east" });
+    if (event.type === "blocked") {
+      assertEquals(event.terrain, "tideflat");
+      blocked = true;
+      break;
+    }
+  }
+  assertEquals(blocked, true);
+
+  apply(state, { type: "craft", item: "reedSkiff" });
+  assertEquals(isPassable("tideflat", state.items), true);
+  const route = pathToCairnstone(state);
+  for (const direction of route) {
+    const [event] = apply(state, { type: "move", direction });
+    assertEquals(event.type, "moved");
+  }
+  assertEquals(
+    terrainAt(state.seed, state.player.x, state.player.y),
+    "cairnstone",
+  );
+
+  const [gathered] = apply(state, { type: "gather" });
+  assertEquals(gathered.type, "gathered");
+  assertEquals(state.resources.stone, 1);
+  assertEquals(cannotCraftReason(state, "cairnPick"), null);
+
+  const [crafted] = apply(state, { type: "craft", item: "cairnPick" });
+  assertEquals(crafted.type, "crafted");
+  assertEquals(state.items.cairnPick, 1);
+});
+
+function pathToCairnstone(state: GameState): Direction[] {
+  const steps: Record<Direction, { x: number; y: number }> = {
+    north: { x: 0, y: -1 },
+    south: { x: 0, y: 1 },
+    east: { x: 1, y: 0 },
+    west: { x: -1, y: 0 },
+  };
+  const queue: {
+    x: number;
+    y: number;
+    route: Direction[];
+  }[] = [{ ...state.player, route: [] }];
+  const visited = new Set([`${state.player.x},${state.player.y}`]);
+
+  for (let index = 0; index < queue.length; index++) {
+    const cell = queue[index];
+    if (terrainAt(state.seed, cell.x, cell.y) === "cairnstone") {
+      return cell.route;
+    }
+
+    for (const direction of Object.keys(steps) as Direction[]) {
+      const step = steps[direction];
+      const x = cell.x + step.x;
+      const y = cell.y + step.y;
+      const key = `${x},${y}`;
+      if (visited.has(key) || Math.abs(x) > 60 || Math.abs(y) > 60) continue;
+      if (!isPassable(terrainAt(state.seed, x, y), state.items)) continue;
+      visited.add(key);
+      queue.push({ x, y, route: [...cell.route, direction] });
     }
   }
 
-  for (const mat of neededMaterials) {
-    for (let seed = 1; seed <= 20; seed++) {
-      let found = false;
-      for (let y = -15; y <= 15 && !found; y++) {
-        for (let x = -15; x <= 15; x++) {
-          if (!isPassable(terrainAt(seed, x, y))) continue;
-          if (materialAt(seed, x, y) === mat) {
-            found = true;
-            break;
-          }
-        }
+  throw new Error("Could not find a skiff route to cairnstone");
+}
+
+Deno.test("the starting island has skiff materials but no stone", () => {
+  const neededForSkiff = Object.keys(RECIPES.reedSkiff);
+  for (let seed = 1; seed <= 50; seed++) {
+    const available = new Set<Material>();
+    for (let y = -12; y <= 12; y++) {
+      for (let x = -12; x <= 12; x++) {
+        const terrain = terrainAt(seed, x, y);
+        if (!isPassable(terrain, {})) continue;
+        const material = materialAt(seed, x, y);
+        if (material) available.add(material);
       }
+    }
+
+    for (const material of neededForSkiff) {
       assertEquals(
-        found,
+        available.has(material as Material),
         true,
-        `Expected passable '${mat}' near origin for seed ${seed}`,
+        `Expected '${material}' on the starting island for seed ${seed}`,
       );
     }
+    assertEquals(
+      available.has("stone"),
+      false,
+      `Expected no stone on the starting island for seed ${seed}`,
+    );
   }
 });

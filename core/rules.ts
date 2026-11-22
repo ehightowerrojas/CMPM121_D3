@@ -4,17 +4,16 @@
 
 import {
   isPassable,
+  type Item,
   type Material,
   materialAt,
   type Terrain,
   terrainAt,
 } from "./terrain.ts";
 
-export type { Material };
+export type { Item, Material };
 
 export type Resource = Material;
-
-export type Item = "reedSkiff" | "cairnPick";
 
 export type Cell = { x: number; y: number };
 
@@ -113,7 +112,7 @@ function move(state: GameState, direction: Direction): GameEvent[] {
   const from = { ...state.player };
   const to = { x: from.x + step.x, y: from.y + step.y };
   const terrain = terrainAt(state.seed, to.x, to.y);
-  if (!isPassable(terrain)) {
+  if (!isPassable(terrain, state.items)) {
     return [{ type: "blocked", at: from, toward: to, terrain }];
   }
   state.player.x = to.x;

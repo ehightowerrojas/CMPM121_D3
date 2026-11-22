@@ -4,6 +4,7 @@ import {
   type Item,
   type Material,
   type Resource,
+  TERRAIN_RULES,
   terrainAt,
 } from "../core/mod.ts";
 
@@ -36,8 +37,13 @@ function describe(event: GameEvent): string {
   switch (event.type) {
     case "moved":
       return `moved to ${event.to.x}, ${event.to.y}`;
-    case "blocked":
-      return `blocked by ${event.terrain} at ${event.toward.x}, ${event.toward.y}`;
+    case "blocked": {
+      const requiredItem = TERRAIN_RULES[event.terrain].requires;
+      const requirement = requiredItem
+        ? ` (need ${ITEM_LABELS[requiredItem]})`
+        : "";
+      return `blocked by ${event.terrain} at ${event.toward.x}, ${event.toward.y}${requirement}`;
+    }
     case "gathered":
       return `gathered ${event.amount} ${event.resource} at ${event.cell.x}, ${event.cell.y}`;
     case "nothingToGather":

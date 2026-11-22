@@ -12,7 +12,7 @@ const BUMP_MS = 60;
 const POP_MS = 90;
 const MARKER_COLOR = 0xf5e6a8;
 const BUMP_COLOR = 0xe0533d;
-const PEBBLE_COLOR = 0xb8b2a8;
+const STONE_COLOR = 0xb8b2a8;
 
 const TERRAIN_COLORS: Record<Terrain, number> = {
   saltgrass: 0x5d9e4a,
@@ -158,14 +158,10 @@ export class GridView extends Phaser.Scene {
           CELL_SIZE - 1,
         );
 
-        if (
-          !isUsed &&
-          terrain === "saltgrass" &&
-          materialAt(this.seed, x, y) === "stone"
-        ) {
+        if (!isUsed && materialAt(this.seed, x, y) === "stone") {
           const cx = x * CELL_SIZE + CELL_SIZE / 2;
           const cy = y * CELL_SIZE + CELL_SIZE / 2;
-          this.ground.fillStyle(PEBBLE_COLOR, 0.95);
+          this.ground.fillStyle(STONE_COLOR, 0.95);
           this.ground.fillCircle(cx - 4, cy + 2, 3);
           this.ground.fillCircle(cx + 4, cy - 2, 2.5);
           this.ground.fillCircle(cx + 2, cy + 4, 2);
