@@ -8,13 +8,15 @@ import {
 
 const ITEM_LABELS: Record<Item, string> = {
   reedSkiff: "Reed Skiff",
-  cairnPick: "Cairn Pick",
+  stoneAxe: "Stone Axe",
+  sturdyRaft: "Sturdy Raft",
 };
 
 const MATERIAL_LABELS: Record<Material, string> = {
   reeds: "reeds",
   driftwood: "driftwood",
   stone: "stone",
+  hardwood: "hardwood",
 };
 
 function formatAmounts(amounts: Partial<Record<Material, number>>): string {
@@ -59,6 +61,8 @@ export class RecipeBook {
         ? "Ready"
         : reason.kind === "alreadyOwned"
         ? "Already owned"
+        : reason.kind === "gameEnded"
+        ? "Game complete"
         : `Missing ${formatAmounts(reason.missing)}`;
       element.textContent = `Craft ${
         ITEM_LABELS[item]

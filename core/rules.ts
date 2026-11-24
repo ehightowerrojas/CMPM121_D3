@@ -8,6 +8,7 @@ import {
   type Material,
   materialAt,
   type Terrain,
+  TERRAIN_RULES,
   terrainAt,
 } from "./terrain.ts";
 
@@ -25,6 +26,7 @@ export type GameState = {
   resources: Record<Material, number>;
   gatheredCells: string[];
   items: Record<Item, number>;
+  ended: boolean;
 };
 
 export type Command =
@@ -34,6 +36,7 @@ export type Command =
 
 export type CannotCraftReason =
   | { kind: "alreadyOwned" }
+  | { kind: "gameEnded" }
   | { kind: "missing"; missing: Partial<Record<Material, number>> };
 
 export type GameEvent =
@@ -41,16 +44,21 @@ export type GameEvent =
   | { type: "blocked"; at: Cell; toward: Cell; terrain: Terrain }
   | { type: "gathered"; cell: Cell; resource: Material; amount: number }
   | { type: "nothingToGather"; cell: Cell }
+  | { type: "cannotGather"; cell: Cell; required: Item }
   | {
     type: "crafted";
     item: Item;
     spent: Partial<Record<Material, number>>;
   }
-  | { type: "cannotCraft"; item: Item; reason: CannotCraftReason };
+  | { type: "cannotCraft"; item: Item; reason: CannotCraftReason }
+  | { type: "ended" };
+
+export const CAPSTONE: Item = "sturdyRaft";
 
 export const RECIPES: Record<Item, Partial<Record<Material, number>>> = {
   reedSkiff: { reeds: 3, driftwood: 2 },
-  cairnPick: { driftwood: 2, stone: 1 },
+  stoneAxe: { driftwood: 2, stone: 1 },
+  sturdyRaft: { hardwood: 3, reeds: 2, driftwood: 2 },
 };
 
 const STEPS: Record<Direction, Cell> = {
@@ -68,13 +76,15 @@ export function newGame(seed: number): GameState {
   return {
     seed,
     player: { x: 0, y: 0 },
-    resources: { reeds: 0, driftwood: 0, stone: 0 },
+    resources: { reeds: 0, driftwood: 0, stone: 0, hardwood: 0 },
     gatheredCells: [],
-    items: { reedSkiff: 0, cairnPick: 0 },
+    items: { reedSkiff: 0, stoneAxe: 0, sturdyRaft: 0 },
+    ended: false,
   };
 }
 
 export function apply(state: GameState, command: Command): GameEvent[] {
+  if (state.ended) return [];
   switch (command.type) {
     case "move":
       return move(state, command.direction);
@@ -89,6 +99,7 @@ export function cannotCraftReason(
   state: GameState,
   item: Item,
 ): CannotCraftReason | null {
+  if (state.ended) return { kind: "gameEnded" };
   if (state.items[item] > 0) {
     return { kind: "alreadyOwned" };
   }
@@ -130,6 +141,11 @@ function gather(state: GameState): GameEvent[] {
   if (!resource) {
     return [{ type: "nothingToGather", cell }];
   }
+  const required = TERRAIN_RULES[terrainAt(state.seed, cell.x, cell.y)]
+    .gatherRequires;
+  if (required && state.items[required] <= 0) {
+    return [{ type: "cannotGather", cell, required }];
+  }
   const amount = 1;
   state.gatheredCells.push(key);
   state.resources[resource] += amount;
@@ -147,5 +163,10 @@ function craft(state: GameState, item: Item): GameEvent[] {
   }
   state.items[item] += 1;
 
-  return [{ type: "crafted", item, spent }];
+  const crafted: GameEvent = { type: "crafted", item, spent };
+  if (item === CAPSTONE) {
+    state.ended = true;
+    return [crafted, { type: "ended" }];
+  }
+  return [crafted];
 }

@@ -11,7 +11,8 @@ const ARROWS: Record<string, Direction> = {
 
 const CRAFT_KEYS: Record<string, Item> = {
   "1": "reedSkiff",
-  "2": "cairnPick",
+  "2": "stoneAxe",
+  "3": "sturdyRaft",
 };
 
 function onControl(target: EventTarget | null): boolean {

@@ -41,6 +41,22 @@ body {
   margin: 0;
 }
 
+#goal {
+  color: #f5e6a8;
+  margin: 4px 0;
+}
+
+#ending {
+  padding: 10px 14px;
+  border: 1px solid #d5bd79;
+  border-radius: 6px;
+  background: #394936;
+}
+
+#ending p {
+  margin: 4px 0;
+}
+
 #hud h2 {
   margin: 8px 0 4px;
   font-size: 1rem;

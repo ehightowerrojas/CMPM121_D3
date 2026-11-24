@@ -9,13 +9,19 @@ export function unreachableRecipes(
   const reached = new Set<string>();
   const made = new Set<string>();
 
-  for (const terrain of Object.values(TERRAIN_RULES)) {
-    if (!terrain.requires && terrain.yields) reached.add(terrain.yields);
-  }
-
   let changed: boolean;
   do {
     changed = false;
+    for (const terrain of Object.values(TERRAIN_RULES)) {
+      if (
+        terrain.yields && !reached.has(terrain.yields) &&
+        (!terrain.requires || reached.has(terrain.requires)) &&
+        (!terrain.gatherRequires || reached.has(terrain.gatherRequires))
+      ) {
+        reached.add(terrain.yields);
+        changed = true;
+      }
+    }
     for (const [output, inputs] of Object.entries(recipes)) {
       if (made.has(output)) continue;
       const ingredients = Object.entries(inputs)
@@ -28,11 +34,6 @@ export function unreachableRecipes(
       made.add(output);
       reached.add(output);
       changed = true;
-      for (const terrain of Object.values(TERRAIN_RULES)) {
-        if (terrain.requires === output && terrain.yields) {
-          reached.add(terrain.yields);
-        }
-      }
     }
   } while (changed);
 

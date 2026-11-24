@@ -70,6 +70,16 @@ Deno.test("Tideflat gives nothing", () => {
   for (const { x, y } of tideflats) assertEquals(materialAt(121, x, y), null);
 });
 
+Deno.test("neighboring islands provide enough hardwood for the raft", () => {
+  for (const seed of [1, 2, 3, 7, 121, 2026]) {
+    const hardwood = cellsAround(40).filter(({ x, y }) =>
+      x >= 12 && x <= 40 && Math.abs(y) <= 14 &&
+      terrainAt(seed, x, y) === "hardwoodGrove"
+    );
+    assert(hardwood.length >= 3, `expected hardwood for seed ${seed}`);
+  }
+});
+
 Deno.test("cairnstone forms small, separated clumps on outer islands", () => {
   const landSizes = new Set<number>();
   for (const seed of [1, 2, 3, 121, 2026]) {

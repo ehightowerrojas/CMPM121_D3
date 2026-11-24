@@ -19,6 +19,7 @@ const TERRAIN_COLORS: Record<Terrain, number> = {
   bramblewood: 0x2f6b3a,
   tideflat: 0x2d5f9e,
   cairnstone: 0x6e6a66,
+  hardwoodGrove: 0x543b24,
 };
 
 const CELLS_ACROSS = 16;
@@ -89,8 +90,10 @@ export class GridView extends Phaser.Scene {
         this.drawCellsAround(this.lastCenter);
         return this.pop();
       case "nothingToGather":
+      case "cannotGather":
       case "crafted":
       case "cannotCraft":
+      case "ended":
         return Promise.resolve();
       default:
         event satisfies never;

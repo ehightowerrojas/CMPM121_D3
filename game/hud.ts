@@ -10,13 +10,15 @@ import {
 
 const ITEM_LABELS: Record<Item, string> = {
   reedSkiff: "Reed Skiff",
-  cairnPick: "Cairn Pick",
+  stoneAxe: "Stone Axe",
+  sturdyRaft: "Sturdy Raft",
 };
 
 const MATERIAL_LABELS: Record<Material, string> = {
   reeds: "reeds",
   driftwood: "driftwood",
   stone: "stone",
+  hardwood: "hardwood",
 };
 
 function element(id: string): HTMLElement {
@@ -48,15 +50,20 @@ function describe(event: GameEvent): string {
       return `gathered ${event.amount} ${event.resource} at ${event.cell.x}, ${event.cell.y}`;
     case "nothingToGather":
       return `nothing to gather at ${event.cell.x}, ${event.cell.y}`;
+    case "cannotGather":
+      return `need ${ITEM_LABELS[event.required]} to gather hardwood`;
     case "crafted":
       return `crafted ${ITEM_LABELS[event.item]}`;
     case "cannotCraft":
       if (event.reason.kind === "alreadyOwned") {
         return `cannot craft ${ITEM_LABELS[event.item]}: already owned`;
       }
+      if (event.reason.kind === "gameEnded") return "the game has ended";
       return `cannot craft ${ITEM_LABELS[event.item]}: missing ${
         formatMissing(event.reason.missing)
       }`;
+    case "ended":
+      return "You built a sturdy raft and escaped the islands!";
   }
 }
 
@@ -90,6 +97,8 @@ export class Hud {
         }
       }
       this.showResources();
+    } else if (event.type === "ended") {
+      element("ending").hidden = false;
     }
   }
 
@@ -102,5 +111,6 @@ export class Hud {
     element("reeds").textContent = String(this.counts.reeds);
     element("driftwood").textContent = String(this.counts.driftwood);
     element("stone").textContent = String(this.counts.stone);
+    element("hardwood").textContent = String(this.counts.hardwood);
   }
 }

@@ -1,15 +1,21 @@
 // The world is a pure function of a seed and coordinates. Nothing here is stored,
 // so the world can be effectively unbounded while saved state stays small.
 
-export type Terrain = "saltgrass" | "bramblewood" | "tideflat" | "cairnstone";
+export type Terrain =
+  | "saltgrass"
+  | "bramblewood"
+  | "tideflat"
+  | "cairnstone"
+  | "hardwoodGrove";
 
-export type Material = "reeds" | "driftwood" | "stone";
+export type Material = "reeds" | "driftwood" | "stone" | "hardwood";
 
-export type Item = "reedSkiff" | "cairnPick";
+export type Item = "reedSkiff" | "stoneAxe" | "sturdyRaft";
 
 export type TerrainRule = {
   yields: Material | null;
   requires?: Item;
+  gatherRequires?: Item;
 };
 
 export const TERRAIN_RULES: Record<Terrain, TerrainRule> = {
@@ -17,6 +23,11 @@ export const TERRAIN_RULES: Record<Terrain, TerrainRule> = {
   bramblewood: { yields: "driftwood" },
   tideflat: { yields: null, requires: "reedSkiff" },
   cairnstone: { yields: "stone", requires: "reedSkiff" },
+  hardwoodGrove: {
+    yields: "hardwood",
+    requires: "reedSkiff",
+    gatherRequires: "stoneAxe",
+  },
 };
 
 const ISLAND_SPACING = 25;
@@ -59,6 +70,7 @@ export function terrainAt(seed: number, x: number, y: number): Terrain {
   if (home && offsetX >= 2 && Math.abs(offsetY) <= 2) return "bramblewood";
 
   if (!home && inCairnClump(seed, gridX, gridY, x, y)) return "cairnstone";
+  if (!home && offsetX ** 2 + offsetY ** 2 <= 6.25) return "hardwoodGrove";
   return noise(seed + 2, x, y, 5) < 0.45 ? "bramblewood" : "saltgrass";
 }
 

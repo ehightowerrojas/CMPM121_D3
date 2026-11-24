@@ -116,10 +116,10 @@ Deno.test("an event keeps its cells while state moves on", () => {
 
 Deno.test("a crafted event keeps its costs while later crafting continues", () => {
   const state = newGame(1);
-  state.resources = { reeds: 3, driftwood: 4, stone: 1 };
+  state.resources = { reeds: 3, driftwood: 4, stone: 1, hardwood: 0 };
   const [crafted] = apply(state, { type: "craft", item: "reedSkiff" });
 
-  apply(state, { type: "craft", item: "cairnPick" });
+  apply(state, { type: "craft", item: "stoneAxe" });
 
   assertEquals(crafted, {
     type: "crafted",
@@ -162,7 +162,7 @@ Deno.test("gathering an already-gathered cell returns nothingToGather", () => {
 
 Deno.test("crafting with enough resources deducts costs and adds item", () => {
   const state = newGame(1);
-  state.resources = { reeds: 5, driftwood: 3, stone: 1 };
+  state.resources = { reeds: 5, driftwood: 3, stone: 1, hardwood: 0 };
 
   const events = apply(state, { type: "craft", item: "reedSkiff" });
 
@@ -171,14 +171,19 @@ Deno.test("crafting with enough resources deducts costs and adds item", () => {
     item: "reedSkiff",
     spent: { reeds: 3, driftwood: 2 },
   }]);
-  assertEquals(state.resources, { reeds: 2, driftwood: 1, stone: 1 });
+  assertEquals(state.resources, {
+    reeds: 2,
+    driftwood: 1,
+    stone: 1,
+    hardwood: 0,
+  });
   assertEquals(state.items.reedSkiff, 1);
-  assertEquals(state.items.cairnPick, 0);
+  assertEquals(state.items.stoneAxe, 0);
 });
 
 Deno.test("crafting while short changes nothing and reports missing materials", () => {
   const state = newGame(1);
-  state.resources = { reeds: 1, driftwood: 2, stone: 0 };
+  state.resources = { reeds: 1, driftwood: 2, stone: 0, hardwood: 0 };
   const before = cloneState(state);
 
   const events = apply(state, { type: "craft", item: "reedSkiff" });
@@ -198,14 +203,14 @@ Deno.test("crafting query reports readiness and ownership for both recipes", () 
     kind: "missing",
     missing: { reeds: 3, driftwood: 2 },
   });
-  assertEquals(cannotCraftReason(state, "cairnPick"), {
+  assertEquals(cannotCraftReason(state, "stoneAxe"), {
     kind: "missing",
     missing: { driftwood: 2, stone: 1 },
   });
 
-  state.resources = { reeds: 3, driftwood: 2, stone: 1 };
+  state.resources = { reeds: 3, driftwood: 2, stone: 1, hardwood: 0 };
   assertEquals(cannotCraftReason(state, "reedSkiff"), null);
-  assertEquals(cannotCraftReason(state, "cairnPick"), null);
+  assertEquals(cannotCraftReason(state, "stoneAxe"), null);
 
   state.items.reedSkiff = 1;
   assertEquals(cannotCraftReason(state, "reedSkiff"), {
@@ -213,35 +218,35 @@ Deno.test("crafting query reports readiness and ownership for both recipes", () 
   });
 });
 
-Deno.test("crafting a second pick returns alreadyOwned and changes nothing", () => {
+Deno.test("crafting a second axe returns alreadyOwned and changes nothing", () => {
   const state = newGame(1);
-  state.resources = { reeds: 0, driftwood: 4, stone: 2 };
+  state.resources = { reeds: 0, driftwood: 4, stone: 2, hardwood: 0 };
 
-  const firstEvents = apply(state, { type: "craft", item: "cairnPick" });
+  const firstEvents = apply(state, { type: "craft", item: "stoneAxe" });
   assertEquals(firstEvents, [{
     type: "crafted",
-    item: "cairnPick",
+    item: "stoneAxe",
     spent: { driftwood: 2, stone: 1 },
   }]);
-  assertEquals(state.items.cairnPick, 1);
+  assertEquals(state.items.stoneAxe, 1);
 
   const beforeSecond = cloneState(state);
-  const secondEvents = apply(state, { type: "craft", item: "cairnPick" });
+  const secondEvents = apply(state, { type: "craft", item: "stoneAxe" });
 
   assertEquals(state, beforeSecond);
   assertEquals(secondEvents, [{
     type: "cannotCraft",
-    item: "cairnPick",
+    item: "stoneAxe",
     reason: { kind: "alreadyOwned" },
   }]);
 });
 
-Deno.test("a skiff crosses shallow water to the stone island for a pick", () => {
+Deno.test("a skiff crosses shallow water to the stone island for an axe", () => {
   const state = newGame(121);
-  state.resources = { reeds: 3, driftwood: 4, stone: 0 };
+  state.resources = { reeds: 3, driftwood: 4, stone: 0, hardwood: 0 };
 
   assertEquals(cannotCraftReason(state, "reedSkiff"), null);
-  assertEquals(cannotCraftReason(state, "cairnPick"), {
+  assertEquals(cannotCraftReason(state, "stoneAxe"), {
     kind: "missing",
     missing: { stone: 1 },
   });
@@ -272,11 +277,11 @@ Deno.test("a skiff crosses shallow water to the stone island for a pick", () => 
   const [gathered] = apply(state, { type: "gather" });
   assertEquals(gathered.type, "gathered");
   assertEquals(state.resources.stone, 1);
-  assertEquals(cannotCraftReason(state, "cairnPick"), null);
+  assertEquals(cannotCraftReason(state, "stoneAxe"), null);
 
-  const [crafted] = apply(state, { type: "craft", item: "cairnPick" });
+  const [crafted] = apply(state, { type: "craft", item: "stoneAxe" });
   assertEquals(crafted.type, "crafted");
-  assertEquals(state.items.cairnPick, 1);
+  assertEquals(state.items.stoneAxe, 1);
 });
 
 function pathToCairnstone(state: GameState): Direction[] {

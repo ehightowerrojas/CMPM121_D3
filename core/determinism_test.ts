@@ -21,8 +21,8 @@ function commands(): Command[] {
   return [
     ...base,
     { type: "craft", item: "reedSkiff" },
-    { type: "craft", item: "cairnPick" },
-    { type: "craft", item: "cairnPick" },
+    { type: "craft", item: "stoneAxe" },
+    { type: "craft", item: "stoneAxe" },
   ];
 }
 
