@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertNotEquals } from "@std/assert";
-import { isPassable, materialAt, terrainAt } from "./mod.ts";
+import { isPassable, materialAt, RECIPES, terrainAt } from "./mod.ts";
 
 function sample(seed: number, originX = 0, originY = 0): string[] {
   const cells: string[] = [];
@@ -71,12 +71,14 @@ Deno.test("Tideflat gives nothing", () => {
 });
 
 Deno.test("neighboring islands provide enough hardwood for the raft", () => {
+  const needed = RECIPES.sturdyRaft.hardwood;
+  assert(needed !== undefined, "expected the raft to require hardwood");
   for (const seed of [1, 2, 3, 7, 121, 2026]) {
     const hardwood = cellsAround(40).filter(({ x, y }) =>
       x >= 12 && x <= 40 && Math.abs(y) <= 14 &&
       terrainAt(seed, x, y) === "hardwoodGrove"
     );
-    assert(hardwood.length >= 3, `expected hardwood for seed ${seed}`);
+    assert(hardwood.length >= needed, `expected hardwood for seed ${seed}`);
   }
 });
 

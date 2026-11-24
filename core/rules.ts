@@ -58,7 +58,7 @@ export const CAPSTONE: Item = "sturdyRaft";
 export const RECIPES: Record<Item, Partial<Record<Material, number>>> = {
   reedSkiff: { reeds: 3, driftwood: 2 },
   stoneAxe: { driftwood: 2, stone: 1 },
-  sturdyRaft: { hardwood: 3, reeds: 2, driftwood: 2 },
+  sturdyRaft: { hardwood: 6, reeds: 2, driftwood: 2 },
 };
 
 const STEPS: Record<Direction, Cell> = {

@@ -1,6 +1,6 @@
 # D3 starter
 
-A walking skeleton: one thin slice of a game that works from end to end. The player moves gridwise over a big seeded world, with a game core that knows nothing about Phaser and a Phaser client that presents what the core reports. Assignment instructions are on Canvas.
+A surfer gathers materials across a seeded archipelago to build a sturdy raft and escape. Gather reeds and driftwood on the starting island, craft a Reed Skiff to cross shallow water, and gather stone on another island to make a Stone Axe. Use the axe to gather hardwood in groves, then craft the Sturdy Raft to win. Arrow keys move, Space gathers, and the recipe buttons or keys 1, 2, and 3 craft items.
 
 Install [Deno](https://docs.deno.com/runtime/getting_started/installation/) and [Git](https://git-scm.com/downloads). Create your own repository from this template, clone it, open a terminal in that folder, and run `deno task setup` once. Run `deno task dev` and open the local URL printed in the terminal (normally `http://localhost:3000`). Arrow keys move. Add `?seed=7` to the URL for another world. Open the repository folder itself in VS Code, not a parent folder, and accept the recommended Deno extension. If Phaser still shows errors or `any` after `deno task setup`, type or save in that file once.
 
@@ -40,6 +40,10 @@ Named here so you can read about them. Each also appears in a one-line comment w
 ## Tests
 
 `deno task test` runs every `*_test.ts` file in `core/`, with no browser involved. The samples show the shape: a move, a blocked move that changes nothing, an event that keeps its cells while state moves on, terrain determinism, a check that no seed starts walled in, and a replay that plays the same seed and commands twice and compares the results. Add your own beside them.
+
+`core/run.json` is a bot-planned, seed 121 finishing run: 55 commands, including all three crafts. The replay test runs it twice through the core and compares both state and events. The original costs took 49 commands on the same planner; the Sturdy Raft now needs 6 hardwood instead of 3 to give the outer island more gathering time. This is a route count, not a measured human play time; use player feedback for further tuning.
+
+To record a different run, reload with a fixed seed and play to the ending. In the browser console, `game.controller.recorded.length` gives the number of commands sent to the core, and `copy(JSON.stringify({ seed: game.state.seed, commands: game.controller.recorded }))` copies a fixture in Chrome or Edge. Replace `core/run.json` with the result, format it with `deno fmt core/run.json`, and run `deno test core/replay_test.ts`. Reloading clears the recording.
 
 ## Tasks
 
